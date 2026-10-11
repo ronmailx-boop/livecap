@@ -10,10 +10,11 @@
 - [x] מיזוג ל-`main`
 - [x] פריסה ב-Render (שירות web, Frankfurt) → https://livecap-o95z.onrender.com
 - [x] health check `/health` ב-Render (אומת)
-- [x] מסך אחד: מיקרופון + תרגום באותה אפליקציה (הוסרו חדרים, דובר/מאזין, WebSocket)
+- [x] מסך אחד: מיקרופון + תרגום באותה אפליקציה (הוסרו חדרים, דובר/מאזין, WebSocket) — פרוס ב-Render
 - [ ] בדיקה ב-Chrome באנדרואיד + התקנה למסך הבית
 
 ## הערות
+- auto-deploy מ-`main` לא הופעל אחרי מיזוג PR #2 (11.10.2026); הפריסה הופעלה ידנית. כנראה ש-Render לא מחובר לריפו דרך ה-GitHub App. לבדוק ב-Render → Settings → Build & Deploy.
 - השירות נוצר דרך ה-API של Render ולא דרך Blueprint. ה-health check (`/health`) הוגדר ידנית בדשבורד ואומת.
 
 ## רעיונות להמשך
