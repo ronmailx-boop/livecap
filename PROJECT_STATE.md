@@ -19,6 +19,7 @@
 - [x] פריסה ל-Cloudflare הצליחה (לוג: workers.dev + livecap.vplusstudio.app custom domain)
 - [x] תיקון: "התרגום נכשל" ב-Cloudflare (429 מ-Google/MyMemory) → fallback ל-Render + השכמה ברקע
 - [x] אימות livecap.vplusstudio.app בטלפון — עובד (11.10.2026)
+- [x] אריח LiveCap נוסף לאתר האפליקציות https://apps.vplusstudio.app (ריפו my-site, PR #48)
 
 ## הערות
 - auto-deploy מ-`main` לא הופעל אחרי מיזוג PR #2 (11.10.2026); הפריסה הופעלה ידנית. כנראה ש-Render לא מחובר לריפו דרך ה-GitHub App. לבדוק ב-Render → Settings → Build & Deploy.
