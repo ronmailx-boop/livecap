@@ -10,7 +10,9 @@
   - שירותי התרגום החינמיים מחזירים 429 לכתובות ה-IP המשותפות של Cloudflare (נבדק 11.10.2026). לכן ה-Worker מנסה את Google, ואם נחסם מעביר את הבקשה ל-Render (`FALLBACK_API` ב-`wrangler.jsonc`). פתיחת `/` מעירה את Render ברקע (`run_worker_first`). לכן אסור למחוק את שירות ה-Render.
   - ה-workflow מריץ אחרי כל פריסה בדיקת תרגום אמיתית דרך ה-Worker, ונכשל אם היא לא מחזירה 200.
 - `server.js`: אותו API ב-Express, לאירוח ב-Render (גיבוי). כתובות ישנות (`/speaker.html`, `/l/:code`) מופנות ל-`/`.
-- `public/index.html`: כל האפליקציה. זיהוי דיבור בדפדפן (Web Speech API, `ru-RU`, continuous), תרגום ביניים מוגבל לכל 700ms ותרגום סופי לכל משפט, גודל טקסט, הצגת מקור, ניקוי.
+- `public/index.html`: כל האפליקציה. זיהוי דיבור בדפדפן (Web Speech API, `ru-RU`, continuous), גודל טקסט, הצגת מקור, ניקוי.
+  - מותאם להרצאה: Chrome מוסר את הדיבור בקטעים קצרים, והם נאספים לכרטיס אחד עד סוף משפט (סימן פיסוק, שקט של `PAUSE_MS`=1.5 שניות, או `MAX_CHARS`=300 תווים). רק אז המשפט כולו מתורגם בבקשה אחת. בזמן הדיבור המשפט המתהווה מתורגם מחדש כל `LIVE_MS`=900ms.
+  - `addPiece()` מסנן חזרות של מילים קודמות ש-Chrome באנדרואיד מוסיף לפעמים לקטע חדש.
 - PWA: `manifest.webmanifest`, `sw.js` (לא שומר נתונים חיים), אייקונים.
 - `render.yaml`: שירות web חינמי ב-Render, health check ב-`/health`.
 - פריסה ראשית: Cloudflare Worker `livecap` → https://livecap.vplusstudio.app (וגם `livecap.ronmailx.workers.dev`), דרך `.github/workflows/deploy-cloudflare.yml` בכל push ל-`main`. חריגה מכוונת מהכלל "Cloudflare = סטטי בלבד": ה-Worker מריץ גם את התרגום, כי אין בו סודות, ו-Render נרדם (אושר ע"י הבעלים 11.10.2026).
