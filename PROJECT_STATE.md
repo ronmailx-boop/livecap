@@ -1,7 +1,7 @@
 # PROJECT_STATE · LiveCap
 
 ## Current Focus
-פרוס ב-Cloudflare: https://livecap.vplusstudio.app ו-https://livecap.ronmailx.workers.dev. הצעד הבא: בדיקה בטלפון והתקנה מחדש למסך הבית מהכתובת החדשה.
+האפליקציה עובדת בטלפון בכתובת https://livecap.vplusstudio.app (Cloudflare Worker, תרגום דרך Google ← fallback ל-Render). אין משימות פתוחות. אפשרי להמשך: לחבר את Render ל-GitHub כדי שה-auto-deploy יעבוד, ורעיונות מהרשימה למטה.
 
 ## משימות
 - [x] `npm install` + `npm test` (5/5 עוברות)
@@ -18,7 +18,7 @@
 - [x] Secret `CLOUDFLARE_API_TOKEN` בריפו (המשתמש)
 - [x] פריסה ל-Cloudflare הצליחה (לוג: workers.dev + livecap.vplusstudio.app custom domain)
 - [x] תיקון: "התרגום נכשל" ב-Cloudflare (429 מ-Google/MyMemory) → fallback ל-Render + השכמה ברקע
-- [ ] אימות livecap.vplusstudio.app בטלפון
+- [x] אימות livecap.vplusstudio.app בטלפון — עובד (11.10.2026)
 
 ## הערות
 - auto-deploy מ-`main` לא הופעל אחרי מיזוג PR #2 (11.10.2026); הפריסה הופעלה ידנית. כנראה ש-Render לא מחובר לריפו דרך ה-GitHub App. לבדוק ב-Render → Settings → Build & Deploy.
