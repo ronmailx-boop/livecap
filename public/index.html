@@ -4,35 +4,188 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#7367f0">
-<title>LiveCap · כתוביות חיות</title>
+<title>LiveCap · תרגום חי</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="stylesheet" href="/style.css">
 </head>
-<body>
+<body class="showru">
 <header><h1>🎙️ LiveCap · רוסית ← עברית</h1></header>
-<main>
-  <div class="card center">
-    <p style="margin:0 0 12px">אני מדבר ורוצה שאחרים יראו תרגום לעברית</p>
-    <a href="/speaker.html" style="text-decoration:none"><button class="btn">🎤 אני הדובר</button></a>
-  </div>
-  <div class="card center">
-    <p style="margin:0 0 12px">יש לי קוד חדר ממישהו</p>
-    <form id="f">
-      <input id="code" maxlength="8" placeholder="קוד" autocomplete="off" autocapitalize="characters">
-      <div style="height:12px"></div>
-      <button class="btn sec" type="submit">👂 הצטרף כמאזין</button>
-    </form>
-  </div>
-  <p class="mut center">הדובר מדבר ברוסית, המאזינים קוראים עברית בזמן אמת.</p>
+
+<div class="toolbar">
+  <button class="btn sec sm" id="minus" aria-label="הקטן טקסט">א−</button>
+  <button class="btn sec sm" id="plus" aria-label="הגדל טקסט">א+</button>
+  <button class="btn sec sm on" id="ru">🇷🇺 מקור</button>
+  <button class="btn sec sm" id="clear">🗑️ נקה</button>
+</div>
+
+<main style="padding-top:8px">
+  <div id="caps"><div class="empty" id="empty">לחץ על המיקרופון ודבר ברוסית.<br>התרגום לעברית יופיע כאן.</div></div>
 </main>
+
+<footer class="foot">
+  <button class="mic" id="mic" aria-label="התחל להקשיב">🎙️</button>
+  <div id="state" class="mut">לחץ כדי להתחיל</div>
+  <div id="err" class="err" role="alert"></div>
+</footer>
+
 <script>
-document.getElementById('f').addEventListener('submit', e => {
-  e.preventDefault();
-  const c = document.getElementById('code').value.trim().toUpperCase();
-  if (c) location.href = '/l/' + encodeURIComponent(c);
-});
+(() => {
+  const $ = id => document.getElementById(id);
+  const store = (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
+  const load = k => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+
+  /* ---------- display options ---------- */
+  let fs = +load('fs') || 1.6;
+  const applyFs = () => { document.documentElement.style.setProperty('--fs', fs + 'rem'); store('fs', fs); };
+  applyFs();
+  $('plus').onclick = () => { fs = Math.min(4, +(fs + .2).toFixed(1)); applyFs(); };
+  $('minus').onclick = () => { fs = Math.max(1, +(fs - .2).toFixed(1)); applyFs(); };
+
+  const applyRu = on => { document.body.classList.toggle('showru', on); $('ru').classList.toggle('on', on); store('showru', on ? '1' : '0'); };
+  applyRu(load('showru') !== '0');
+  $('ru').onclick = () => applyRu(!document.body.classList.contains('showru'));
+
+  /* ---------- captions ---------- */
+  const caps = $('caps');
+  let cur = null; // line still being spoken (interim)
+  let stick = true;
+  caps.addEventListener('scroll', () => { stick = caps.scrollHeight - caps.scrollTop - caps.clientHeight < 80; });
+
+  function lineEl() {
+    if (cur) return cur;
+    const empty = $('empty'); if (empty) empty.remove();
+    cur = document.createElement('div');
+    cur.innerHTML = '<div class="he"></div><div class="ru"></div>';
+    caps.appendChild(cur);
+    while (caps.children.length > 80) caps.firstChild.remove();
+    return cur;
+  }
+  const scroll = () => { if (stick) caps.scrollTop = caps.scrollHeight; };
+
+  $('clear').onclick = () => {
+    caps.innerHTML = '<div class="empty" id="empty">הרשימה נוקתה.</div>';
+    cur = null;
+  };
+
+  /* ---------- translation ---------- */
+  async function tr(text) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const r = await fetch('/api/translate', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text }), signal: ctrl.signal
+      });
+      if (r.status === 429) throw new Error('יותר מדי בקשות. המתן רגע.');
+      if (!r.ok) throw new Error('שירות התרגום לא זמין כרגע. נסה שוב בעוד רגע.');
+      return (await r.json()).he;
+    } catch (e) {
+      if (e.name === 'AbortError' || e instanceof TypeError) throw new Error('אין חיבור לשרת. בדוק את האינטרנט.');
+      throw e;
+    } finally { clearTimeout(timer); }
+  }
+
+  const INTERIM_MS = 700;
+  let pendingText = '', interimTimer = null, lastInterimAt = 0;
+
+  function onInterim(text) {
+    const el = lineEl();
+    el.className = 'line interim';
+    el.children[1].textContent = text;
+    scroll();
+    pendingText = text;
+    if (interimTimer) return;
+    interimTimer = setTimeout(async () => {
+      interimTimer = null;
+      const target = cur, t = pendingText;
+      if (!target) return;
+      lastInterimAt = Date.now();
+      try {
+        const he = await tr(t);
+        if (cur === target) { target.children[0].textContent = he; scroll(); }
+      } catch (_) { /* the final translation reports errors */ }
+    }, Math.max(0, lastInterimAt + INTERIM_MS - Date.now()));
+  }
+
+  async function onFinal(text) {
+    const el = lineEl();
+    cur = null;
+    el.className = 'line';
+    el.children[1].textContent = text;
+    scroll();
+    try {
+      el.children[0].textContent = await tr(text);
+      $('err').textContent = '';
+    } catch (e) {
+      el.children[0].textContent = '⚠ התרגום נכשל';
+      $('err').textContent = e.message;
+    }
+    scroll();
+  }
+
+  /* ---------- speech recognition ---------- */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec, running = false, lastInterim = '';
+
+  function build() {
+    rec = new SR();
+    rec.lang = 'ru-RU';
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    rec.onresult = e => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        const t = r[0].transcript.trim();
+        if (r.isFinal) {
+          if (t) onFinal(t);
+          lastInterim = '';
+        } else interim += (interim ? ' ' : '') + t;
+      }
+      if (interim && interim !== lastInterim) {
+        lastInterim = interim;
+        onInterim(interim);
+      }
+    };
+    rec.onerror = e => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        $('err').textContent = 'אין הרשאת מיקרופון. אשר אותה בהגדרות האתר ונסה שוב.';
+        stop();
+      } else if (e.error === 'network') $('err').textContent = 'שגיאת רשת בזיהוי הדיבור';
+      else if (e.error !== 'no-speech' && e.error !== 'aborted') $('err').textContent = 'שגיאת זיהוי: ' + e.error;
+    };
+    rec.onend = () => {
+      // Chrome ends sessions on silence; finish unfinished text and restart
+      if (lastInterim) { onFinal(lastInterim); lastInterim = ''; }
+      if (running) setTimeout(() => { try { rec.start(); } catch (_) {} }, 250);
+    };
+  }
+
+  let wake;
+  async function lock() { try { wake = await navigator.wakeLock.request('screen'); } catch (_) {} }
+
+  function start() {
+    if (!SR) { $('err').textContent = 'הדפדפן לא תומך בזיהוי דיבור. השתמש ב-Chrome.'; return; }
+    $('err').textContent = '';
+    build(); running = true;
+    try { rec.start(); } catch (_) {}
+    $('mic').classList.add('rec'); $('mic').textContent = '⏹'; $('mic').setAttribute('aria-label', 'עצור');
+    $('state').textContent = 'מקשיב… דבר ברוסית';
+    lock();
+  }
+  function stop() {
+    running = false;
+    try { rec && rec.stop(); } catch (_) {}
+    $('mic').classList.remove('rec'); $('mic').textContent = '🎙️'; $('mic').setAttribute('aria-label', 'התחל להקשיב');
+    $('state').textContent = 'עצור. לחץ כדי להמשיך';
+    try { wake && wake.release(); } catch (_) {}
+  }
+  $('mic').onclick = () => running ? stop() : start();
+  document.addEventListener('visibilitychange', () => { if (running && document.visibilityState === 'visible') lock(); });
+})();
 </script>
 <script>if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});</script>
 </body>

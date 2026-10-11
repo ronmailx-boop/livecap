@@ -1,7 +1,7 @@
 {
-  "name": "LiveCap · כתוביות חיות",
+  "name": "LiveCap · תרגום חי",
   "short_name": "LiveCap",
-  "description": "תרגום חי מרוסית לעברית: דובר אחד, מאזינים רבים",
+  "description": "תרגום חי מרוסית לעברית: מדברים ורואים את התרגום מיד",
   "lang": "he",
   "dir": "rtl",
   "start_url": "/",
