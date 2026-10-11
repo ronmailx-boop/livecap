@@ -12,7 +12,7 @@
 - פריסה: Render, שירות `livecap` (Frankfurt) → https://livecap-o95z.onrender.com, auto-deploy מ-`main`.
 
 ## כללים
-- מובייל-פירסט, RTL עברית, נושא סגול `#7367f0` / `#7c4ddb`.
+- מובייל-פירסט, RTL עברית. עיצוב dark mode: רקע `#0B0C0E`, כרטיסים `#15171A`, הדגשה טורקיז `#2EC4B6`, אדום `#E5484D` רק בהקלטה, גופן Rubik, אייקוני SVG בקו (בלי אימוג׳י). העיצוב: https://claude.ai/artifact/AQApsprmx8JXBBAzDeYeKn
 - בלי מפתחות API בקוד. אם מוסיפים DeepL/Claude, דרך משתני סביבה ב-Render בלבד.
 - לפני כל commit: `npm test` (הבדיקה מדמה את התרגום ולא צריכה רשת).
 - בלי הקראה קולית בעברית: המיקרופון פתוח בזמן ההקראה וקולט אותה.
