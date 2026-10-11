@@ -75,7 +75,8 @@
 
   $('clear').onclick = () => {
     caps.innerHTML = '<div class="empty" id="empty"><p>המסך נוקה.</p></div>';
-    cur = null;
+    cur = null; sentence = ''; interim = ''; liveText = ''; lastPiece = '';
+    clearTimeout(pauseTimer);
   };
 
   /* ---------- translation ---------- */
@@ -96,29 +97,66 @@
     } finally { clearTimeout(timer); }
   }
 
-  const INTERIM_MS = 700;
-  let pendingText = '', interimTimer = null, lastInterimAt = 0;
+  /* ---------- sentences ----------
+     Chrome hands over speech in short pieces (it finalizes on every small pause). A lecture
+     needs whole sentences, so pieces are collected into one card and translated together
+     only when the sentence ends: punctuation, a pause, or a very long sentence. */
+  const PAUSE_MS = 1500;      // silence that closes a sentence
+  const MAX_CHARS = 300;      // close a run-on sentence at the next piece after this
+  const LIVE_MS = 900;        // how often the growing sentence is re-translated
+  const END_RE = /[.!?…]["»)]*$/;
 
-  function onInterim(text) {
+  let sentence = '', interim = '', lastPiece = '';
+  let pauseTimer = null, liveTimer = null, lastLiveAt = 0, liveText = '';
+  const norm = t => t.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
+  const fullText = () => (sentence + ' ' + interim).trim();
+
+  function showLive() {
+    const text = fullText();
+    if (!text) return;
     const el = lineEl();
     el.className = 'line interim';
     el.children[1].textContent = text;
     scroll();
-    pendingText = text;
-    if (interimTimer) return;
-    interimTimer = setTimeout(async () => {
-      interimTimer = null;
-      const target = cur, t = pendingText;
-      if (!target) return;
-      lastInterimAt = Date.now();
+    if (text === liveText || liveTimer) return;
+    liveTimer = setTimeout(async () => {
+      liveTimer = null;
+      const target = cur, t = fullText();
+      if (!target || !t || t === liveText) return;
+      liveText = t; lastLiveAt = Date.now();
       try {
         const he = await tr(t);
         if (cur === target) { target.children[0].textContent = he; scroll(); }
-      } catch (_) { /* the final translation reports errors */ }
-    }, Math.max(0, lastInterimAt + INTERIM_MS - Date.now()));
+      } catch (_) { /* the sentence translation reports errors */ }
+      if (cur === target && fullText() !== liveText) showLive();
+    }, Math.max(0, lastLiveAt + LIVE_MS - Date.now()));
   }
 
-  async function onFinal(text) {
+  // Chrome on Android sometimes repeats earlier words in a new final piece; keep only what is new.
+  function addPiece(t) {
+    const n = norm(t);
+    if (!n) return;
+    for (const before of [norm(sentence), norm(lastPiece)]) {
+      if (!before) continue;
+      if (n === before) return;
+      if (n.startsWith(before + ' ')) { t = t.split(/\s+/).slice(before.split(' ').length).join(' '); break; }
+    }
+    if (!t) return;
+    lastPiece = t;
+    sentence = (sentence + ' ' + t).trim();
+  }
+
+  // Close the sentence after a pause; while Chrome still shows unfinished words, wait longer.
+  function armPause(ms = PAUSE_MS) {
+    clearTimeout(pauseTimer);
+    pauseTimer = setTimeout(closeSentence, ms);
+  }
+
+  async function closeSentence() {
+    clearTimeout(pauseTimer); clearTimeout(liveTimer); liveTimer = null;
+    const text = fullText();
+    sentence = ''; interim = ''; liveText = '';
+    if (!text) return;
     const el = lineEl();
     cur = null;
     el.className = 'line';
@@ -134,9 +172,22 @@
     scroll();
   }
 
+  function onInterim(text) {
+    interim = text;
+    armPause(PAUSE_MS * 2);
+    showLive();
+  }
+
+  function onFinal(text) {
+    interim = '';
+    addPiece(text);
+    if (END_RE.test(sentence) || sentence.length >= MAX_CHARS) closeSentence();
+    else { showLive(); armPause(); }
+  }
+
   /* ---------- speech recognition ---------- */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let rec, running = false, lastInterim = '';
+  let rec, running = false;
 
   function build() {
     rec = new SR();
@@ -145,19 +196,14 @@
     rec.interimResults = true;
     rec.maxAlternatives = 1;
     rec.onresult = e => {
-      let interim = '';
+      let text = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i];
         const t = r[0].transcript.trim();
-        if (r.isFinal) {
-          if (t) onFinal(t);
-          lastInterim = '';
-        } else interim += (interim ? ' ' : '') + t;
+        if (r.isFinal) { if (t) onFinal(t); }
+        else text += (text ? ' ' : '') + t;
       }
-      if (interim && interim !== lastInterim) {
-        lastInterim = interim;
-        onInterim(interim);
-      }
+      if (text && text !== interim) onInterim(text);
     };
     rec.onerror = e => {
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
@@ -167,9 +213,10 @@
       else if (e.error !== 'no-speech' && e.error !== 'aborted') $('err').textContent = 'שגיאת זיהוי: ' + e.error;
     };
     rec.onend = () => {
-      // Chrome ends sessions on silence; finish unfinished text and restart
-      if (lastInterim) { onFinal(lastInterim); lastInterim = ''; }
-      if (running) setTimeout(() => { try { rec.start(); } catch (_) {} }, 250);
+      // Chrome ends its session every so often; keep unfinished words in the sentence and restart at once
+      if (interim) { const t = interim; interim = ''; addPiece(t); armPause(); }
+      if (running) setTimeout(() => { try { rec.start(); } catch (_) {} }, 50);
+      else closeSentence();
     };
   }
 
@@ -189,6 +236,7 @@
   function stop() {
     running = false;
     try { rec && rec.stop(); } catch (_) {}
+    closeSentence();
     $('mic').classList.remove('rec'); $('mic').setAttribute('aria-label', 'התחל להקשיב');
     document.body.classList.remove('rec');
     $('stxt').textContent = 'עצור. לחץ כדי להמשיך';
