@@ -1,3 +1,33 @@
+# LiveCap · כתוביות חיות
+
+תרגום חי מרוסית לעברית. דובר אחד מדבר ברוסית, מאזינים רבים קוראים כתוביות בעברית בזמן אמת.
+בעלים: Ron (VPlus Studio). עובד רק מאנדרואיד, בלי מחשב.
+
+## ארכיטקטורה
+- `server.js`: Express + `ws`. חדרים בזיכרון, ממסר WebSocket (`/ws`), תרגום ב-`translate()` (Google gtx endpoint, גיבוי MyMemory), cache, heartbeat.
+- `public/speaker.html`: זיהוי דיבור בדפדפן (Web Speech API, `ru-RU`, continuous), שולח `{t:'seg', id, text, final}`.
+- `public/listen.html`: כתוביות חיות, גודל טקסט, הצגת מקור, הקראה (he-IL), היסטוריה למצטרפים באמצע.
+- PWA: `manifest.webmanifest`, `sw.js` (לא שומר נתונים חיים), אייקונים.
+- `render.yaml`: שירות web חינמי ב-Render, health check ב-`/health`.
+
+## פרוטוקול WebSocket
+- דובר: `{t:'host', room, token}` ואז `{t:'seg', id, text, final}`. הטוקן נשמר ב-localStorage ומונע חטיפת חדר.
+- מאזין: `{t:'join', room}`. מקבל `joined`, `cap`, `count`, `live`.
+
+## כללים
+- מובייל-פירסט, RTL עברית, נושא סגול `#7367f0` / `#7c4ddb`.
+- בלי מפתחות API בקוד. אם מוסיפים DeepL/Claude, דרך משתני סביבה ב-Render בלבד.
+- לפני כל commit: `npm test` (הבדיקה מדמה את התרגום ולא צריכה רשת).
+- אין לשבור את הפרוטוקול בין דובר למאזין בלי לעדכן את שני הצדדים.
+
+## ידוע / רעיונות להמשך
+- זיהוי דיבור עובד רק ב-Chrome. ב-Safari/Firefox לא.
+- נקודות התרגום החינמיות לא רשמיות ועלולות להיחסם. אפשרות שדרוג: `translate()` ל-DeepL או Claude API.
+- Render חינמי נרדם. אפשר לפנות ל-`/health` מ-GitHub Actions או שירות ping כדי להחזיק אותו ער.
+- רעיונות: קוד QR להצטרפות, סיסמת חדר, שפות נוספות, שמירת תמלול.
+
+---
+
 # Project Instructions for Claude Code
 
 אנחנו עובדים דרך Claude Code. כל השינויים נכתבים ונשמרים ישירות ב-Repository.

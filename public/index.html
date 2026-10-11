@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7367f0">
+<title>LiveCap · כתוביות חיות</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header><h1>🎙️ LiveCap · רוסית ← עברית</h1></header>
+<main>
+  <div class="card center">
+    <p style="margin:0 0 12px">אני מדבר ורוצה שאחרים יראו תרגום לעברית</p>
+    <a href="/speaker.html" style="text-decoration:none"><button class="btn">🎤 אני הדובר</button></a>
+  </div>
+  <div class="card center">
+    <p style="margin:0 0 12px">יש לי קוד חדר ממישהו</p>
+    <form id="f">
+      <input id="code" maxlength="8" placeholder="קוד" autocomplete="off" autocapitalize="characters">
+      <div style="height:12px"></div>
+      <button class="btn sec" type="submit">👂 הצטרף כמאזין</button>
+    </form>
+  </div>
+  <p class="mut center">הדובר מדבר ברוסית, המאזינים קוראים עברית בזמן אמת.</p>
+</main>
+<script>
+document.getElementById('f').addEventListener('submit', e => {
+  e.preventDefault();
+  const c = document.getElementById('code').value.trim().toUpperCase();
+  if (c) location.href = '/l/' + encodeURIComponent(c);
+});
+</script>
+<script>if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});</script>
+</body>
+</html>
