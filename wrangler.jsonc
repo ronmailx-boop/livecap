@@ -1,0 +1,9 @@
+// Cloudflare Workers: serves public/ as static assets; worker/index.js handles the translate API.
+{
+  "name": "livecap",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-11",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "workers_dev": true,
+  "routes": [{ "pattern": "livecap.vplusstudio.app", "custom_domain": true }]
+}

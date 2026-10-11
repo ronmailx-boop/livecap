@@ -46,6 +46,18 @@ const { app } = require('./server');
   const old = await origFetch(base + '/l/ABCDE', { redirect: 'manual' });
   const home = await (await origFetch(base + '/')).text();
 
+  // Cloudflare Worker: same API, static files from the ASSETS binding
+  const worker = (await import('./worker/index.js')).default;
+  const env = { ASSETS: { fetch: async () => new Response('asset') } };
+  const wpost = (body) => worker.fetch(new Request('https://livecap.test/api/translate', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body,
+  }), env);
+  const w1 = await wpost(JSON.stringify({ text: 'спасибо' }));
+  const w1b = await w1.json();
+  const w2 = await wpost('not json');
+  const w3 = await worker.fetch(new Request('https://livecap.test/l/ABCDE'), env);
+  const w4 = await (await worker.fetch(new Request('https://livecap.test/style.css'), env)).text();
+
   const checks = [
     ['translates russian to hebrew', r1.status === 200 && b1.he === '[HE] привет мир'],
     ['rejects empty text', r2.status === 400],
@@ -55,6 +67,10 @@ const { app } = require('./server');
     ['health ok', health.ok === true],
     ['old listener link redirects home', old.status === 301 && old.headers.get('location') === '/'],
     ['home page has the mic', home.includes('id="mic"')],
+    ['worker translates', w1.status === 200 && w1b.he === '[HE] спасибо'],
+    ['worker rejects bad json', w2.status === 400],
+    ['worker redirects old link', w3.status === 301 && w3.headers.get('location') === 'https://livecap.test/'],
+    ['worker serves static files', w4 === 'asset'],
   ];
   let ok = true;
   for (const [n, p] of checks) { console.log(p ? 'PASS' : 'FAIL', n); ok = ok && !!p; }
