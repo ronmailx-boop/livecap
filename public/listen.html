@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7367f0">
+<title>מאזין · תרגום חי</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <h1>👂 תרגום לעברית</h1>
+  <span class="chip"><span class="dot" id="dot"></span><span id="st">מתחבר…</span></span>
+</header>
+
+<div class="toolbar">
+  <button class="btn sec sm" id="minus">א−</button>
+  <button class="btn sec sm" id="plus">א+</button>
+  <button class="btn sec sm" id="ru">🇷🇺 מקור</button>
+  <button class="btn sec sm" id="tts">🔊 הקראה</button>
+</div>
+
+<main style="padding-top:8px">
+  <div id="caps"><div class="empty" id="empty">ממתין לדובר…<br><span class="mut">הקוד: <b id="code" style="direction:ltr;display:inline-block"></b></span></div></div>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const code = decodeURIComponent(location.pathname.split('/').pop() || '').toUpperCase();
+  $('code').textContent = code;
+
+  let fs = +localStorage.getItem('fs') || 1.6;
+  const applyFs = () => { document.documentElement.style.setProperty('--fs', fs + 'rem'); localStorage.setItem('fs', fs); };
+  applyFs();
+  $('plus').onclick = () => { fs = Math.min(4, fs + .2); applyFs(); };
+  $('minus').onclick = () => { fs = Math.max(1, fs - .2); applyFs(); };
+
+  $('ru').onclick = () => { document.body.classList.toggle('showru'); $('ru').classList.toggle('on'); };
+
+  let tts = false;
+  $('tts').onclick = () => {
+    tts = !tts; $('tts').classList.toggle('on', tts);
+    if (tts && 'speechSynthesis' in window) { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(' '); u.lang = 'he-IL'; speechSynthesis.speak(u); }
+    else if (!tts && 'speechSynthesis' in window) speechSynthesis.cancel();
+  };
+  function speak(t) {
+    if (!tts || !('speechSynthesis' in window)) return;
+    const u = new SpeechSynthesisUtterance(t); u.lang = 'he-IL'; u.rate = 1.05;
+    speechSynthesis.speak(u);
+  }
+
+  const caps = $('caps');
+  const els = new Map(); // id -> element
+  const doneIds = new Set();
+  let stick = true;
+  caps.addEventListener('scroll', () => { stick = caps.scrollHeight - caps.scrollTop - caps.clientHeight < 80; });
+
+  function render(c) {
+    if (!c.final && doneIds.has(c.id)) return;
+    const empty = $('empty'); if (empty) empty.remove();
+    let el = els.get(c.id);
+    if (!el) {
+      el = document.createElement('div');
+      el.innerHTML = '<div class="he"></div><div class="ru"></div>';
+      caps.appendChild(el); els.set(c.id, el);
+    }
+    el.className = 'line' + (c.final ? '' : ' interim');
+    el.children[0].textContent = c.he;
+    el.children[1].textContent = c.ru;
+    if (c.final && !doneIds.has(c.id)) { doneIds.add(c.id); speak(c.he); }
+    while (caps.children.length > 60) {
+      const first = caps.firstChild;
+      for (const [k, v] of els) if (v === first) { els.delete(k); break; }
+      first.remove();
+    }
+    if (stick) caps.scrollTop = caps.scrollHeight;
+  }
+
+  const setSt = (cls, txt) => { $('dot').className = 'dot ' + cls; $('st').textContent = txt; };
+  let ws, retry = 0, live = false;
+  function connect() {
+    ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+    ws.onopen = () => { retry = 0; ws.send(JSON.stringify({ t: 'join', room: code })); };
+    ws.onmessage = ev => {
+      const m = JSON.parse(ev.data);
+      if (m.t === 'joined') {
+        live = m.live; setSt(live ? 'on' : '', live ? 'שידור חי' : 'ממתין לדובר');
+        m.history.forEach(render);
+      } else if (m.t === 'cap') render(m);
+      else if (m.t === 'live') { live = m.on; setSt(live ? 'on' : '', live ? 'שידור חי' : 'הדובר התנתק'); }
+      else if (m.t === 'error') {
+        if (m.msg === 'no_room') { setSt('bad', 'החדר לא נמצא'); retry = Math.max(retry, 2); }
+      }
+    };
+    ws.onclose = () => { setSt('bad', 'מתחבר מחדש…'); setTimeout(connect, Math.min(1000 * 2 ** retry++, 8000)); };
+  }
+  connect();
+
+  let wake;
+  async function lock() { try { wake = await navigator.wakeLock.request('screen'); } catch (_) {} }
+  lock();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') lock(); });
+})();
+</script>
+<script>if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});</script>
+</body>
+</html>
