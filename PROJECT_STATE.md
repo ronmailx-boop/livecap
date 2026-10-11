@@ -1,7 +1,7 @@
 # PROJECT_STATE · LiveCap
 
 ## Current Focus
-האפליקציה עובדת בטלפון עם עיצוב dark mode. אין משימות פתוחות. אפשרי להמשך: לחבר את Render ל-GitHub כדי שה-auto-deploy יעבוד, ורעיונות מהרשימה למטה.
+העלאה ל-Cloudflare בכתובת livecap.vplusstudio.app (Worker עם התרגום). הצעד הבא: המשתמש יוצר API Token ושומר אותו כ-Secret `CLOUDFLARE_API_TOKEN` בריפו, ואז מפעילים את ה-workflow ובודקים בטלפון.
 
 ## משימות
 - [x] `npm install` + `npm test` (5/5 עוברות)
@@ -14,6 +14,9 @@
 - [x] בדיקה בטלפון (Chrome באנדרואיד) — עובד (11.10.2026)
 - [x] עיצוב dark mode במקום הסגול (style.css, index.html, manifest, אייקונים)
 - [x] בדיקת העיצוב החדש בטלפון — עובד (11.10.2026)
+- [x] קבצי Cloudflare: `wrangler.jsonc`, `worker/index.js`, `translate.js` משותף, workflow
+- [ ] Secret `CLOUDFLARE_API_TOKEN` בריפו (המשתמש)
+- [ ] פריסה ל-Cloudflare ואימות livecap.vplusstudio.app בטלפון
 
 ## הערות
 - auto-deploy מ-`main` לא הופעל אחרי מיזוג PR #2 (11.10.2026); הפריסה הופעלה ידנית. כנראה ש-Render לא מחובר לריפו דרך ה-GitHub App. לבדוק ב-Render → Settings → Build & Deploy.
@@ -21,5 +24,4 @@
 
 ## רעיונות להמשך
 - שפות נוספות, שמירת/העתקת תמלול
-- ping ל-`/health` כדי להחזיק את Render ער
 - החלפת `translate()` ל-DeepL / Claude API (דרך משתני סביבה)

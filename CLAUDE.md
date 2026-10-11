@@ -5,11 +5,15 @@
 בעלים: Ron (VPlus Studio). עובד רק מאנדרואיד, בלי מחשב.
 
 ## ארכיטקטורה
-- `server.js`: Express. `POST /api/translate` (`{text}` → `{he}`), תרגום ב-`translate()` (Google gtx endpoint, גיבוי MyMemory), cache, הגבלת קצב לפי IP. כתובות ישנות (`/speaker.html`, `/l/:code`) מופנות ל-`/`.
+- `translate.js`: לוגיקת התרגום המשותפת: `translate()` (Google gtx endpoint, גיבוי MyMemory), cache, הגבלת קצב לפי IP, ו-`handleTranslate()` ל-`POST /api/translate` (`{text}` → `{he}`).
+- `worker/index.js`: Cloudflare Worker. מגיש את `public/` (binding `ASSETS`) ומטפל ב-`/api/translate`, `/health` והפניית כתובות ישנות. מוגדר ב-`wrangler.jsonc`.
+- `server.js`: אותו API ב-Express, לאירוח ב-Render (גיבוי). כתובות ישנות (`/speaker.html`, `/l/:code`) מופנות ל-`/`.
 - `public/index.html`: כל האפליקציה. זיהוי דיבור בדפדפן (Web Speech API, `ru-RU`, continuous), תרגום ביניים מוגבל לכל 700ms ותרגום סופי לכל משפט, גודל טקסט, הצגת מקור, ניקוי.
 - PWA: `manifest.webmanifest`, `sw.js` (לא שומר נתונים חיים), אייקונים.
 - `render.yaml`: שירות web חינמי ב-Render, health check ב-`/health`.
-- פריסה: Render, שירות `livecap` (Frankfurt) → https://livecap-o95z.onrender.com, auto-deploy מ-`main`.
+- פריסה ראשית: Cloudflare Worker `livecap` → https://livecap.vplusstudio.app (וגם `livecap.ronmailx.workers.dev`), דרך `.github/workflows/deploy-cloudflare.yml` בכל push ל-`main`. חריגה מכוונת מהכלל "Cloudflare = סטטי בלבד": ה-Worker מריץ גם את התרגום, כי אין בו סודות, ו-Render נרדם (אושר ע"י הבעלים 11.10.2026).
+- גיבוי: Render, שירות `livecap` (Frankfurt) → https://livecap-o95z.onrender.com. ה-auto-deploy שם לא עובד; פורסים ידנית.
+- שינוי בלוגיקת התרגום נעשה ב-`translate.js` בלבד, וחל על שני המארחים.
 
 ## כללים
 - מובייל-פירסט, RTL עברית. עיצוב dark mode: רקע `#0B0C0E`, כרטיסים `#15171A`, הדגשה טורקיז `#2EC4B6`, אדום `#E5484D` רק בהקלטה, גופן Rubik, אייקוני SVG בקו (בלי אימוג׳י). העיצוב: https://claude.ai/artifact/AQApsprmx8JXBBAzDeYeKn
@@ -20,7 +24,6 @@
 ## ידוע / רעיונות להמשך
 - זיהוי דיבור עובד רק ב-Chrome. ב-Safari/Firefox לא.
 - נקודות התרגום החינמיות לא רשמיות ועלולות להיחסם. אפשרות שדרוג: `translate()` ל-DeepL או Claude API.
-- Render חינמי נרדם. אפשר לפנות ל-`/health` מ-GitHub Actions או שירות ping כדי להחזיק אותו ער.
 - רעיונות: שפות נוספות, שמירת/העתקת תמלול.
 
 ---
