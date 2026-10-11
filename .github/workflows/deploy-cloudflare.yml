@@ -35,3 +35,11 @@ jobs:
       - name: Deploy
         if: steps.token.outputs.present == 'true'
         run: npx --yes wrangler@4 deploy
+      # Smoke test: one real translation through the deployed Worker (shows upstream errors in the log).
+      - name: Smoke test
+        if: steps.token.outputs.present == 'true'
+        run: |
+          sleep 5
+          curl -sS -m 20 -w '\nHTTP %{http_code}\n' -X POST https://livecap.ronmailx.workers.dev/api/translate \
+            -H 'content-type: application/json' -d '{"text":"привет, как дела?"}' | tee out.txt
+          grep -q 'HTTP 200' out.txt
