@@ -83,4 +83,4 @@ async function handleTranslate(ip, body) {
   return [200, { he }];
 }
 
-module.exports = { translate, handleTranslate };
+module.exports = { translate, handleTranslate, viaGoogle, MAX_TEXT };

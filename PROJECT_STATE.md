@@ -17,6 +17,7 @@
 - [x] קבצי Cloudflare: `wrangler.jsonc`, `worker/index.js`, `translate.js` משותף, workflow
 - [x] Secret `CLOUDFLARE_API_TOKEN` בריפו (המשתמש)
 - [x] פריסה ל-Cloudflare הצליחה (לוג: workers.dev + livecap.vplusstudio.app custom domain)
+- [x] תיקון: "התרגום נכשל" ב-Cloudflare (429 מ-Google/MyMemory) → fallback ל-Render + השכמה ברקע
 - [ ] אימות livecap.vplusstudio.app בטלפון
 
 ## הערות

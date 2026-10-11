@@ -40,6 +40,7 @@ jobs:
         if: steps.token.outputs.present == 'true'
         run: |
           sleep 5
-          curl -sS -m 20 -w '\nHTTP %{http_code}\n' -X POST https://livecap.ronmailx.workers.dev/api/translate \
+          curl -sS -m 20 -o /dev/null https://livecap.ronmailx.workers.dev/ || true  # also wakes the Render fallback
+          curl -sS -m 60 -w '\nHTTP %{http_code}\n' -X POST https://livecap.ronmailx.workers.dev/api/translate \
             -H 'content-type: application/json' -d '{"text":"привет, как дела?"}' | tee out.txt
           grep -q 'HTTP 200' out.txt
