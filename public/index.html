@@ -81,7 +81,7 @@
   /* ---------- translation ---------- */
   async function tr(text) {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 10000);
+    const timer = setTimeout(() => ctrl.abort(), 45000); // the server may be waking up
     try {
       const r = await fetch('/api/translate', {
         method: 'POST', headers: { 'content-type': 'application/json' },

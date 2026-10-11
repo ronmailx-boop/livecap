@@ -1,9 +1,11 @@
-// Cloudflare Workers: serves public/ as static assets; worker/index.js handles the translate API.
+// Cloudflare Workers: serves public/ as static assets; worker/index.js handles the translate API
+// (Google first, then the Render server as fallback - see the comment there).
 {
   "name": "livecap",
   "main": "worker/index.js",
   "compatibility_date": "2026-10-11",
-  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/"] },
+  "vars": { "FALLBACK_API": "https://livecap-o95z.onrender.com" },
   "workers_dev": true,
   "routes": [{ "pattern": "livecap.vplusstudio.app", "custom_domain": true }]
 }

@@ -7,12 +7,14 @@
 ## ארכיטקטורה
 - `translate.js`: לוגיקת התרגום המשותפת: `translate()` (Google gtx endpoint, גיבוי MyMemory), cache, הגבלת קצב לפי IP, ו-`handleTranslate()` ל-`POST /api/translate` (`{text}` → `{he}`).
 - `worker/index.js`: Cloudflare Worker. מגיש את `public/` (binding `ASSETS`) ומטפל ב-`/api/translate`, `/health` והפניית כתובות ישנות. מוגדר ב-`wrangler.jsonc`.
+  - שירותי התרגום החינמיים מחזירים 429 לכתובות ה-IP המשותפות של Cloudflare (נבדק 11.10.2026). לכן ה-Worker מנסה את Google, ואם נחסם מעביר את הבקשה ל-Render (`FALLBACK_API` ב-`wrangler.jsonc`). פתיחת `/` מעירה את Render ברקע (`run_worker_first`). לכן אסור למחוק את שירות ה-Render.
+  - ה-workflow מריץ אחרי כל פריסה בדיקת תרגום אמיתית דרך ה-Worker, ונכשל אם היא לא מחזירה 200.
 - `server.js`: אותו API ב-Express, לאירוח ב-Render (גיבוי). כתובות ישנות (`/speaker.html`, `/l/:code`) מופנות ל-`/`.
 - `public/index.html`: כל האפליקציה. זיהוי דיבור בדפדפן (Web Speech API, `ru-RU`, continuous), תרגום ביניים מוגבל לכל 700ms ותרגום סופי לכל משפט, גודל טקסט, הצגת מקור, ניקוי.
 - PWA: `manifest.webmanifest`, `sw.js` (לא שומר נתונים חיים), אייקונים.
 - `render.yaml`: שירות web חינמי ב-Render, health check ב-`/health`.
 - פריסה ראשית: Cloudflare Worker `livecap` → https://livecap.vplusstudio.app (וגם `livecap.ronmailx.workers.dev`), דרך `.github/workflows/deploy-cloudflare.yml` בכל push ל-`main`. חריגה מכוונת מהכלל "Cloudflare = סטטי בלבד": ה-Worker מריץ גם את התרגום, כי אין בו סודות, ו-Render נרדם (אושר ע"י הבעלים 11.10.2026).
-- גיבוי: Render, שירות `livecap` (Frankfurt) → https://livecap-o95z.onrender.com. ה-auto-deploy שם לא עובד; פורסים ידנית.
+- Render (משמש את ה-Worker לתרגום, וגם כתובת גיבוי): שירות `livecap` (Frankfurt) → https://livecap-o95z.onrender.com. ה-auto-deploy שם לא עובד; פורסים ידנית.
 - שינוי בלוגיקת התרגום נעשה ב-`translate.js` בלבד, וחל על שני המארחים.
 
 ## כללים

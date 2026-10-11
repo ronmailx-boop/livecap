@@ -15,6 +15,10 @@ global.fetch = async (url, opts) => {
     const q = decodeURIComponent(u.split('&q=')[1]);
     return { ok: true, json: async () => ({ responseData: { translatedText: '[MM] ' + q } }) };
   }
+  if (u.startsWith('https://fallback.test/api/translate')) {
+    const { text } = JSON.parse(opts.body);
+    return new Response(JSON.stringify({ he: '[FB] ' + text }), { status: 200 });
+  }
   return origFetch(url, opts);
 };
 const { app } = require('./server');
@@ -57,6 +61,12 @@ const { app } = require('./server');
   const w2 = await wpost('not json');
   const w3 = await worker.fetch(new Request('https://livecap.test/l/ABCDE'), env);
   const w4 = await (await worker.fetch(new Request('https://livecap.test/style.css'), env)).text();
+  googleDown = true;
+  const fbEnv = { ...env, FALLBACK_API: 'https://fallback.test' };
+  const w5 = await (await worker.fetch(new Request('https://livecap.test/api/translate', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: 'пока' }),
+  }), fbEnv)).json();
+  googleDown = false;
 
   const checks = [
     ['translates russian to hebrew', r1.status === 200 && b1.he === '[HE] привет мир'],
@@ -71,6 +81,7 @@ const { app } = require('./server');
     ['worker rejects bad json', w2.status === 400],
     ['worker redirects old link', w3.status === 301 && w3.headers.get('location') === 'https://livecap.test/'],
     ['worker serves static files', w4 === 'asset'],
+    ['worker falls back to Render when Google is blocked', w5.he === '[FB] пока'],
   ];
   let ok = true;
   for (const [n, p] of checks) { console.log(p ? 'PASS' : 'FAIL', n); ok = ok && !!p; }
