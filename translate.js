@@ -38,6 +38,8 @@ async function viaMyMemory(text) {
   return String(t).trim();
 }
 
+let lastError = '';
+
 async function translate(text) {
   const key = text.toLowerCase();
   if (cache.has(key)) return cache.get(key);
@@ -48,7 +50,8 @@ async function translate(text) {
     try {
       out = await viaMyMemory(text);
     } catch (e2) {
-      console.warn('translate failed:', e1.message, '|', e2.message);
+      lastError = 'google: ' + e1.message + ' | mymemory: ' + e2.message;
+      console.warn('translate failed:', lastError);
       return null;
     }
   }
@@ -76,7 +79,7 @@ async function handleTranslate(ip, body) {
   const text = String((body && body.text) || '').trim().slice(0, MAX_TEXT);
   if (!text) return [400, { error: 'empty' }];
   const he = await translate(text);
-  if (!he) return [502, { error: 'translate_failed' }];
+  if (!he) return [502, { error: 'translate_failed', detail: lastError }];
   return [200, { he }];
 }
 
